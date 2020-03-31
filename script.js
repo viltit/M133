@@ -10,7 +10,7 @@ const lsClass = 'class';
 
 */
 
-$(function() {
+$(document).ready(() => {
 
     // fetch the date and get the week and year. We need to extend dayjs's functionality first
     dayjs.extend(window.dayjs_plugin_weekOfYear);
@@ -23,12 +23,15 @@ $(function() {
     let professionID = localStorage.getItem(lsProfession);
     let classID = localStorage.getItem(lsClass);
     if (professionID != null && classID != null) {
-        fetchClasses(professionID);
-        fetchClassTable(classID, formatDate(now));
-        // important: we need to set the selected profession and class, or the class will switch when the week button is pushed
-        // TODO: This does not work
-        $('#selectProfession').val(professionID);
-        $('#selectClass').val(classID); 
+        // this was tricky ... when I just call "fetchClassTable" and then set the selected dropdown entry, "fetchClasses" seems to be 
+        // executed asynchrounusly, 
+        $.when(fetchClasses(professionID)).then( () => {
+            $('#selectProfession').val(professionID);
+        });
+        $.when(fetchClassTable(classID, formatDate(now))).then( () => {
+            $('#selectClass').val(classID); 
+        });
+        
         console.log(classID);
         console.log("Selected class id: ", $('#selectProfession').children("option:selected").val());
     }
@@ -82,7 +85,7 @@ $(function() {
         fetchClassTable(selected, formatDate(now));
         $('#classTable').fadeIn(200);
     });
-})
+});
 
 
 /**
@@ -100,7 +103,7 @@ function fetchProfessions() {
         })
         // we have an error
         .fail((error) => {
-            $('#message').append('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
+            $('#message').html('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
         });
 }
 
@@ -125,7 +128,8 @@ function fetchClasses(id) {
         })
         // we have an error
         .fail((error) => {
-            $('#message').append('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
+            console.log(error)
+            $('#message').html('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
         });
 }
 
@@ -137,7 +141,7 @@ function fetchClasses(id) {
 function fetchClassTable(id, date) {
     const request = baseURL + "/tafel.php?" + "klasse_id=" + id + "&woche=" + date;
     console.log(request);
-    $.getJSON(request)
+    return $.getJSON(request)
         // we have the response
         .done((data) => {
             console.log(data);
@@ -202,7 +206,7 @@ function fetchClassTable(id, date) {
         // we have an error
         .fail((error) => {
             console.log(error);
-            $('#message').append('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
+            $('#message').html('<div class="alert alert-danger" role="alert">Die Verbingung zum Server konnte nicht hergestellt werden.</div>');
         });
 }
 
